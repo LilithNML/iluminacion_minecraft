@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Iluminación Optimizada V2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iluminación Optimizada</title>
   <style>
     body {
       font-family: sans-serif;
@@ -15,17 +15,27 @@
     }
     form {
       margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
     }
     input, button {
-      padding: 6px 10px;
-      margin: 5px;
+      padding: 8px;
       font-size: 16px;
+      max-width: 120px;
+      box-sizing: border-box;
+    }
+    .grid-container {
+      overflow-x: auto;
+      padding-bottom: 10px;
     }
     .grid {
       display: grid;
-      margin: 0 auto;
       gap: 1px;
-      justify-content: center;
+      margin: 0 auto;
+      justify-content: start;
+      width: max-content;
     }
     .cell {
       width: 20px;
@@ -51,38 +61,20 @@
       margin-top: 15px;
       font-size: 18px;
     }
-    #volver {
-      margin-top: 15px;
-    }
-    #volver button {
-      padding: 8px 16px;
-      font-size: 16px;
-      background: #444;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    #volver button:hover {
-      background: #666;
-    }
   </style>
 </head>
 <body>
-  <h1>Iluminación Optimizada con Algoritmo Voraz</h1>
+  <h1>Iluminación Optimizada</h1>
   <form id="formulario" onsubmit="generar(); return false;">
-    <label>Ancho (columnas): <input type="number" id="cols" value="30" min="1"></label>
-    <label>Alto (filas): <input type="number" id="rows" value="10" min="1"></label>
+    <label>Ancho: <input type="number" id="cols" value="30" min="1"></label>
+    <label>Alto: <input type="number" id="rows" value="10" min="1"></label>
     <button type="submit">Generar</button>
   </form>
 
-  <div id="contenedor" class="grid"></div>
-  <div id="resumen"></div>
-
-  <!-- Botón para redirigir -->
-  <div id="volver">
-    <button onclick="window.location.href='v1/v1.html'">V1</button>
+  <div class="grid-container">
+    <div id="contenedor" class="grid"></div>
   </div>
+  <div id="resumen"></div>
 
   <script>
     const R = 14;
@@ -119,22 +111,22 @@
       }
     }
 
-    function celdasSinIluminarCubiertas(grid, rows, cols, cx, cy, diamante) {
-      let count = 0;
-      const size = diamante.length;
-      const center = R - 1;
-      for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-          const gx = cx + i - center;
-          const gy = cy + j - center;
-          if (gx >= 0 && gx < rows && gy >= 0 && gy < cols) {
-            if (grid[gx][gy] === 0 && diamante[i][j] > 0) {
-              count++;
-            }
+    function colocarLámparasReales(grid, rows, cols, diamante) {
+      const lamps = [];
+      const pasoX = 2 * (R - 1);
+      const pasoY = R;
+      for (let y = 0; y < rows; y += pasoY) {
+        for (let x = 0; x < cols; x += pasoX) {
+          const dx = ((y / pasoY) % 2 === 0) ? 0 : R - 1;
+          const cx = x + dx;
+          const cy = y;
+          if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
+            lamps.push([cy, cx]);
+            aplicarDiamante(grid, rows, cols, cy, cx, diamante);
           }
         }
       }
-      return count;
+      return lamps;
     }
 
     function generar() {
@@ -147,28 +139,16 @@
 
       const grid = Array.from({ length: rows }, () => Array(cols).fill(0));
       const diamante = generarDiamante();
-      const lamps = [];
+      let lamps = colocarLámparasReales(grid, rows, cols, diamante);
+      const lampsIniciales = lamps.length;
 
-      while (true) {
-        let mejorPos = null;
-        let maxCeldas = 0;
-
-        for (let x = 0; x < rows; x++) {
-          for (let y = 0; y < cols; y++) {
-            if (lamps.some(([lx, ly]) => lx === x && ly === y)) continue;
-
-            const cubiertas = celdasSinIluminarCubiertas(grid, rows, cols, x, y, diamante);
-            if (cubiertas > maxCeldas) {
-              maxCeldas = cubiertas;
-              mejorPos = [x, y];
-            }
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          if (grid[i][j] === 0) {
+            lamps.push([i, j]);
+            aplicarDiamante(grid, rows, cols, i, j, diamante);
           }
         }
-
-        if (maxCeldas === 0) break;
-
-        lamps.push(mejorPos);
-        aplicarDiamante(grid, rows, cols, mejorPos[0], mejorPos[1], diamante);
       }
 
       for (let i = 0; i < rows; i++) {
@@ -191,7 +171,11 @@
         }
       }
 
-      resumen.innerHTML = `🟡 Lámparas totales usadas: <strong>${lamps.length}</strong>`;
+      resumen.innerHTML = `
+        🟡 Lámparas totales: <strong>${lamps.length}</strong><br>
+        🧩 Patrón inicial: ${lampsIniciales}<br>
+        🛠️ Añadidas extra: ${lamps.length - lampsIniciales}
+      `;
     }
 
     window.onload = generar;
