@@ -10,11 +10,32 @@
       text-align: center;
       background: #111;
       color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    form {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    input, button {
+      padding: 8px;
+      font-size: 16px;
+      max-width: 120px;
+      box-sizing: border-box;
+    }
+    .grid-container {
+      overflow-x: auto;
+      padding-bottom: 10px;
     }
     .grid {
       display: grid;
-      margin: 20px auto;
       gap: 1px;
+      margin: 0 auto;
+      justify-content: start;
+      width: max-content;
     }
     .cell {
       width: 20px;
@@ -25,6 +46,7 @@
       font-size: 12px;
       background-color: #222;
       color: lime;
+      user-select: none;
     }
     .lamp {
       background-color: yellow;
@@ -35,18 +57,24 @@
       background-color: red;
       color: white;
     }
+    #resumen {
+      margin-top: 15px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <h1>Iluminación Optimizada con Lámparas</h1>
   <form id="formulario" onsubmit="generar(); return false;">
-    <label>Ancho (columnas): <input type="number" id="cols" value="30" min="1"></label>
-    <label>Alto (filas): <input type="number" id="rows" value="10" min="1"></label>
+    <label>Ancho: <input type="number" id="cols" value="30" min="1"></label>
+    <label>Alto: <input type="number" id="rows" value="10" min="1"></label>
     <button type="submit">Generar</button>
   </form>
 
-  <div id="contenedor" class="grid"></div>
-  <div id="resumen" style="margin-top: 10px; font-size: 18px;"></div>
+  <div class="grid-container">
+    <div id="contenedor" class="grid"></div>
+  </div>
+  <div id="resumen"></div>
 
   <script>
     const R = 14;
@@ -114,17 +142,15 @@
       let lamps = colocarLámparasReales(grid, rows, cols, diamante);
       const lampsIniciales = lamps.length;
 
-      // Post-procesamiento: agregar lámparas donde falte iluminación
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
           if (grid[i][j] === 0) {
-            lamps.push([i, j]); // Añadir lámpara
+            lamps.push([i, j]);
             aplicarDiamante(grid, rows, cols, i, j, diamante);
           }
         }
       }
 
-      // Mostrar la cuadrícula
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
           const cell = document.createElement("div");
@@ -145,7 +171,6 @@
         }
       }
 
-      // Mostrar resumen de lámparas
       resumen.innerHTML = `
         🟡 Lámparas totales: <strong>${lamps.length}</strong><br>
         🧩 Patrón inicial: ${lampsIniciales}<br>
