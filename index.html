@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Iluminación Optimizada - Algoritmo Voraz</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #111;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 6px 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      margin: 0 auto;
+      gap: 1px;
+      justify-content: center;
+    }
+    .cell {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background-color: #222;
+      color: lime;
+      user-select: none;
+    }
+    .lamp {
+      background-color: yellow;
+      color: black;
+      font-weight: bold;
+    }
+    .dark {
+      background-color: red;
+      color: white;
+    }
+    #resumen {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+    #volver {
+      margin-top: 15px;
+    }
+    #volver button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background: #444;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #volver button:hover {
+      background: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Iluminación Optimizada con Algoritmo Voraz</h1>
+  <form id="formulario" onsubmit="generar(); return false;">
+    <label>Ancho (columnas): <input type="number" id="cols" value="30" min="1"></label>
+    <label>Alto (filas): <input type="number" id="rows" value="10" min="1"></label>
+    <button type="submit">Generar</button>
+  </form>
+
+  <div id="contenedor" class="grid"></div>
+  <div id="resumen"></div>
+
+  <!-- Botón para redirigir -->
+  <div id="volver">
+    <button onclick="window.location.href='inicio.html'">🔙 Volver al inicio</button>
+  </div>
+
+  <script>
+    const R = 14;
+    const D = 2 * R - 1;
+
+    function generarDiamante() {
+      const size = D;
+      const center = R - 1;
+      const diamante = Array.from({ length: size }, () =>
+        Array.from({ length: size }, () => 0)
+      );
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const dist = Math.abs(i - center) + Math.abs(j - center);
+          if (dist < R) {
+            diamante[i][j] = R - dist;
+          }
+        }
+      }
+      return diamante;
+    }
+
+    function aplicarDiamante(grid, rows, cols, cx, cy, diamante) {
+      const size = diamante.length;
+      const center = R - 1;
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const gx = cx + i - center;
+          const gy = cy + j - center;
+          if (gx >= 0 && gx < rows && gy >= 0 && gy < cols) {
+            grid[gx][gy] = Math.max(grid[gx][gy], diamante[i][j]);
+          }
+        }
+      }
+    }
+
+    function celdasSinIluminarCubiertas(grid, rows, cols, cx, cy, diamante) {
+      let count = 0;
+      const size = diamante.length;
+      const center = R - 1;
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const gx = cx + i - center;
+          const gy = cy + j - center;
+          if (gx >= 0 && gx < rows && gy >= 0 && gy < cols) {
+            if (grid[gx][gy] === 0 && diamante[i][j] > 0) {
+              count++;
+            }
+          }
+        }
+      }
+      return count;
+    }
+
+    function generar() {
+      const rows = parseInt(document.getElementById("rows").value);
+      const cols = parseInt(document.getElementById("cols").value);
+      const contenedor = document.getElementById("contenedor");
+      const resumen = document.getElementById("resumen");
+      contenedor.innerHTML = "";
+      contenedor.style.gridTemplateColumns = `repeat(${cols}, 20px)`;
+
+      const grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+      const diamante = generarDiamante();
+      const lamps = [];
+
+      while (true) {
+        let mejorPos = null;
+        let maxCeldas = 0;
+
+        for (let x = 0; x < rows; x++) {
+          for (let y = 0; y < cols; y++) {
+            if (lamps.some(([lx, ly]) => lx === x && ly === y)) continue;
+
+            const cubiertas = celdasSinIluminarCubiertas(grid, rows, cols, x, y, diamante);
+            if (cubiertas > maxCeldas) {
+              maxCeldas = cubiertas;
+              mejorPos = [x, y];
+            }
+          }
+        }
+
+        if (maxCeldas === 0) break;
+
+        lamps.push(mejorPos);
+        aplicarDiamante(grid, rows, cols, mejorPos[0], mejorPos[1], diamante);
+      }
+
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const cell = document.createElement("div");
+          const value = grid[i][j];
+          cell.className = "cell";
+
+          if (lamps.some(([x, y]) => x === i && y === j)) {
+            cell.classList.add("lamp");
+            cell.textContent = R;
+          } else if (value === 0) {
+            cell.classList.add("dark");
+            cell.textContent = "0";
+          } else {
+            cell.textContent = value;
+          }
+
+          contenedor.appendChild(cell);
+        }
+      }
+
+      resumen.innerHTML = `🟡 Lámparas totales usadas: <strong>${lamps.length}</strong>`;
+    }
+
+    window.onload = generar;
+  </script>
+</body>
+</html>
